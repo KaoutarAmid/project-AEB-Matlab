@@ -1,0 +1,72 @@
+%% INITAEB.m - Initialisation simplifiée basée uniquement sur headwayOffset
+clc;
+clear;
+
+%% 🔹 Charger le scénario
+scenario = choisirScenario();  % Appelle automatiquement readScenario()
+
+%% 🔹 Paramètres généraux
+Ts = getfield(scenario, 'Ts', 0.1);
+SimStopTime = getfield(scenario, 'SimStopTime', 10);
+
+%% 🔹 Paramètres du véhicule égo
+ego = scenario.EgoVehicle;
+x0_vech = ego.x0;
+y0_vech = ego.y0;
+v0_vech = ego.v0;
+yaw0_vech = ego.yaw0;
+ydot_o = getfield(ego, 'ydot', 0);
+delta_vech = getfield(ego, 'delta', 0);
+
+%% 🔹 Paramètres du véhicule cible
+cible = scenario.TargetVehicle;
+x0_cible = cible.x0;
+y0_cible = cible.y0;
+v0_cible = cible.v0;
+yaw0_cible = getfield(cible, 'yaw0', 0);
+delta_cible = getfield(cible, 'delta', 0);
+
+%% 🔹 Paramètre unique : headwayOffset
+if isfield(scenario, 'FRU') && isfield(scenario.FRU, 'headwayOffset')
+    headwayOffset = scenario.FRU.headwayOffset;
+else
+    headwayOffset = 1.0;  % Valeur par défaut
+end
+
+%% 🔹 Affichage final
+fprintf("\n✅ Scénario '%s' chargé avec succès !\n", scenario.NomScenario);
+conducteurActive_var = Simulink.Parameter;
+conducteurActive_var.Value = 1;  % Par défaut Off
+conducteurActive_var.DataType = 'boolean'; 
+conducteurActive_var.CoderInfo.StorageClass = 'ExportedGlobal';
+%  Variable d'erreur système dynamique (modifiable en simulation)
+if ~exist('erreurSysteme_var', 'var')
+    erreurSysteme_var = Simulink.Signal;
+    erreurSysteme_var.DataType = 'boolean';
+    erreurSysteme_var.CoderInfo.StorageClass = 'SimulinkGlobal';
+    erreurSysteme_var.InitialValue = '0'; % Valeur initiale
+end
+
+% Texte pour affichage
+Pas_en_panne = "Pas en panne";
+en_panne = "En panne";
+
+
+if ~exist('commandeAEB', 'var')
+   commandeAEB = Simulink.Signal;
+    commandeAEB.DataType = 'boolean';
+    commandeAEB.CoderInfo.StorageClass = 'SimulinkGlobal';
+   commandeAEB.InitialValue = '0'; % Valeur initiale
+end
+if ~exist('inattentionConducteur', 'var')
+   inattentionConducteur = Simulink.Signal;
+    inattentionConducteur.DataType = 'boolean';
+    inattentionConducteur.CoderInfo.StorageClass = 'SimulinkGlobal';
+   inattentionConducteur.InitialValue = '0'; % Valeur initiale
+end
+if ~exist('Securite', 'var')
+  Securite = Simulink.Signal;
+    Securite.DataType = 'boolean';
+    Securite.CoderInfo.StorageClass = 'SimulinkGlobal';
+   Securite.InitialValue = '0'; % Valeur initiale
+end
